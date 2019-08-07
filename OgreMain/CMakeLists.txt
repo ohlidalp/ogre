@@ -166,6 +166,11 @@ if (OGRE_CONFIG_ENABLE_ZIP)
   list(APPEND LIBRARIES ZLIB::ZLIB)
 endif ()
 
+if(OGRE_CONFIG_FILESYSTEM_UNICODE)
+  set_source_files_properties(src/OgreFileSystem.cpp
+    PROPERTIES COMPILE_DEFINITIONS _OGRE_FILESYSTEM_ARCHIVE_UNICODE)
+endif()
+
 set (TARGET_LINK_FLAGS "")
 
 # setup OgreMain target
