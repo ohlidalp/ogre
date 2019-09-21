@@ -169,6 +169,8 @@ endif ()
 if(OGRE_CONFIG_FILESYSTEM_UNICODE)
   set_source_files_properties(src/OgreFileSystem.cpp
     PROPERTIES COMPILE_DEFINITIONS _OGRE_FILESYSTEM_ARCHIVE_UNICODE)
+  set_source_files_properties(src/OgreZip.cpp
+    PROPERTIES COMPILE_DEFINITIONS _OGRE_FILESYSTEM_ARCHIVE_UNICODE)
 endif()
 
 set (TARGET_LINK_FLAGS "")
