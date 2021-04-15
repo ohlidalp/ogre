@@ -34,9 +34,7 @@ THE SOFTWARE.
 namespace Ogre {
 
     Exception::Exception(int num, const String& desc, const String& src) :
-        line( 0 ),
-        description( desc ),
-        source( src )
+        Exception(num, desc, src, "", "", 0)
     {
     }
 
@@ -48,14 +46,18 @@ namespace Ogre {
         source( src ),
         file( fil )
     {
-        // Log this error, mask it from debug though since it may be caught and ignored
-        if(LogManager::getSingletonPtr())
+        StringStream ss;
+
+        ss << typeName << ": "
+           << description
+           << " in " << source;
+
+        if( line > 0 )
         {
-            LogManager::getSingleton().logMessage(
-                this->getFullDescription(), 
-                LML_CRITICAL, true);
+            ss << " at " << file << " (line " << line << ")";
         }
 
+        fullDesc = ss.str();
     }
 
     Exception::Exception(const Exception& rhs)
@@ -66,28 +68,5 @@ namespace Ogre {
         file( rhs.file )
     {
     }
-
-    const String& Exception::getFullDescription(void) const
-    {
-        if (fullDesc.empty())
-        {
-
-            StringStream desc;
-
-            desc << typeName << ": "
-                << description 
-                << " in " << source;
-
-            if( line > 0 )
-            {
-                desc << " at " << file << " (line " << line << ")";
-            }
-
-            fullDesc = desc.str();
-        }
-
-        return fullDesc;
-    }
-
 }
 
