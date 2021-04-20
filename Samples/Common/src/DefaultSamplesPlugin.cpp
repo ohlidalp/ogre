@@ -55,6 +55,7 @@
 #endif
 #ifdef HAVE_IMGUI
 #include "ImGuiDemo.h"
+#include "ImGuiResourceBrowser.h"
 #endif
 #include "Isosurf.h"
 #include "Lighting.h"
@@ -111,6 +112,7 @@ DefaultSamplesPlugin::DefaultSamplesPlugin() : SamplePlugin("DefaultSamplesPlugi
     addSample(new Sample_Isosurf);
 #ifdef HAVE_IMGUI
     addSample(new Sample_ImGui);
+    addSample(new Sample_ImGuiResourceBrowser);
 #endif
     addSample(new Sample_NewInstancing);
     addSample(new Sample_TextureArray);
