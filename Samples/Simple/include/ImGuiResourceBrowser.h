@@ -14,28 +14,97 @@ public:
     {
         if (ImGui::Begin("Resource Browser"))
         {
-            for (auto mgr_pair: Ogre::ResourceGroupManager::getSingleton().getResourceManagers())
+            if (ImGui::BeginTabBar("##tabs"))
             {
-                if (ImGui::CollapsingHeader(mgr_pair.first.c_str()))
+                if (ImGui::BeginTabItem("Managers"))
                 {
-                    for (auto res_pair: mgr_pair.second->getResourceIterator())
-                    {
-                        ImGui::Text(res_pair.second->getName().c_str());
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::BeginTooltip();
-                            drawTooltipBody(res_pair.second);
-                            ImGui::EndTooltip();
-                        }
-                    }
+                    this->drawManagersTabBody();
+                    ImGui::EndTabItem();
                 }
+
+                if (ImGui::BeginTabItem("Groups"))
+                {
+                    this->drawGroupsTabBody();
+                    ImGui::EndTabItem();
+                }
+
+                ImGui::EndTabBar();
             }
 
-            ImGui::End(); // "Resource diag"
+            ImGui::End();
         }
     }
 
 private:
+    void drawGroupsTabBody()
+    {
+        for(Ogre::String const& rgName:
+                Ogre::ResourceGroupManager::getSingleton().getResourceGroups())
+        {
+            if (ImGui::CollapsingHeader(rgName.c_str()))
+            {
+                // Action buttons
+
+                ImGui::TextDisabled("Actions:");
+                ImGui::SameLine();
+                if(ImGui::Button("Load"))
+                {
+                    Ogre::ResourceGroupManager::getSingleton().loadResourceGroup(rgName);
+                }
+                ImGui::SameLine();
+                if(ImGui::Button("Unload"))
+                {
+                    Ogre::ResourceGroupManager::getSingleton().unloadResourceGroup(rgName);
+                }
+
+                // Locations
+
+                ImGui::TextDisabled("Locations:");
+                for(Ogre::ResourceGroupManager::ResourceLocation const& resLocation:
+                        Ogre::ResourceGroupManager::getSingleton().getResourceLocationList(rgName))
+                {
+                    ImGui::Text("%s (type: %s, readonly: %d, recursive: %d)",
+                        resLocation.archive->getName().c_str(),
+                        resLocation.archive->getType().c_str(),
+                        (int)resLocation.archive->isReadOnly(),
+                        (int)resLocation.recursive);
+                }
+
+                // Declarations
+
+                ImGui::TextDisabled("Declarations:");
+                for (Ogre::ResourceGroupManager::ResourceDeclaration const& resDecl:
+                        Ogre::ResourceGroupManager::getSingleton().getResourceDeclarationList(rgName))
+                {
+                    ImGui::Text("%s (type: %s, params: %d)",
+                        resDecl.resourceName.c_str(),
+                        resDecl.resourceType.c_str(),
+                        (int)resDecl.parameters.size());
+                }
+            }
+        }
+    }
+
+    void drawManagersTabBody()
+    {
+        for (auto mgrPair: Ogre::ResourceGroupManager::getSingleton().getResourceManagers())
+        {
+            if (ImGui::CollapsingHeader(mgrPair.first.c_str()))
+            {
+                for (auto resPair: mgrPair.second->getResourceIterator())
+                {
+                    ImGui::Text(resPair.second->getName().c_str());
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::BeginTooltip();
+                        this->drawTooltipBody(resPair.second);
+                        ImGui::EndTooltip();
+                    }
+                }
+            }
+        }
+    }
+
     void drawTooltipBody(ResourcePtr& resource)
     {
         ImGui::TextDisabled("Group: ");
@@ -70,6 +139,7 @@ private:
         ImGui::SameLine();
         ImGui::Text("%s", resource->isManuallyLoaded()?"true":"false");
     }
+
 };
 
 /*
