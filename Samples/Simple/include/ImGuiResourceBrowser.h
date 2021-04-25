@@ -38,28 +38,50 @@ public:
 private:
     void drawGroupsTabBody()
     {
+        bool separate = false;
         for(Ogre::String const& rgName:
                 Ogre::ResourceGroupManager::getSingleton().getResourceGroups())
         {
-            if (ImGui::CollapsingHeader(rgName.c_str()))
+            ImGui::PushID(rgName.c_str());
+            if (separate)
+                ImGui::Separator();
+
+            // Name and details
+
+            ImGui::AlignTextToFramePadding(); // to match with the buttons below.
+            ImGui::Text("%s (inGlobalPool: %d, initialised: %d, loaded: %d)",
+                rgName.c_str(),
+                (int)Ogre::ResourceGroupManager::getSingleton().isResourceGroupInGlobalPool(rgName),
+                (int)Ogre::ResourceGroupManager::getSingleton().isResourceGroupInitialised(rgName),
+                (int)Ogre::ResourceGroupManager::getSingleton().isResourceGroupLoaded(rgName));
+
+            // Action buttons
+
+            ImGui::SameLine();
+            if(ImGui::Button("Initialise"))
             {
-                // Action buttons
+                Ogre::ResourceGroupManager::getSingleton().initialiseResourceGroup(rgName);
+            }
+            ImGui::SameLine();
+            if(ImGui::Button("Clear"))
+            {
+                Ogre::ResourceGroupManager::getSingleton().clearResourceGroup(rgName);
+            }
+            ImGui::SameLine();
+            if(ImGui::Button("Load"))
+            {
+                Ogre::ResourceGroupManager::getSingleton().loadResourceGroup(rgName);
+            }
+            ImGui::SameLine();
+            if(ImGui::Button("Unload"))
+            {
+                Ogre::ResourceGroupManager::getSingleton().unloadResourceGroup(rgName);
+            }
 
-                ImGui::TextDisabled("Actions:");
-                ImGui::SameLine();
-                if(ImGui::Button("Load"))
-                {
-                    Ogre::ResourceGroupManager::getSingleton().loadResourceGroup(rgName);
-                }
-                ImGui::SameLine();
-                if(ImGui::Button("Unload"))
-                {
-                    Ogre::ResourceGroupManager::getSingleton().unloadResourceGroup(rgName);
-                }
+            // Locations
 
-                // Locations
-
-                ImGui::TextDisabled("Locations:");
+            if (ImGui::CollapsingHeader("Locations:"))
+            {
                 for(Ogre::ResourceGroupManager::ResourceLocation const& resLocation:
                         Ogre::ResourceGroupManager::getSingleton().getResourceLocationList(rgName))
                 {
@@ -69,10 +91,12 @@ private:
                         (int)resLocation.archive->isReadOnly(),
                         (int)resLocation.recursive);
                 }
+            }
 
-                // Declarations
+            // Declarations
 
-                ImGui::TextDisabled("Declarations:");
+            if (ImGui::CollapsingHeader("Declarations:"))
+            {
                 for (Ogre::ResourceGroupManager::ResourceDeclaration const& resDecl:
                         Ogre::ResourceGroupManager::getSingleton().getResourceDeclarationList(rgName))
                 {
@@ -82,6 +106,10 @@ private:
                         (int)resDecl.parameters.size());
                 }
             }
+
+            ImGui::PopID(); //rgName.c_str()
+            ImGui::NewLine();
+            separate = true;
         }
     }
 
