@@ -26,6 +26,9 @@ target_include_directories(OgreOverlay PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
   $<INSTALL_INTERFACE:include/OGRE/Overlay>
   PRIVATE ${FREETYPE_INCLUDE_DIRS})
+  if(ZLIB_FOUND)
+    target_link_libraries(OgreOverlay PRIVATE ZLIB::ZLIB)
+  endif()
 
 generate_export_header(OgreOverlay 
     EXPORT_MACRO_NAME _OgreOverlayExport
