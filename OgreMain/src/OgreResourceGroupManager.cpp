@@ -583,7 +583,7 @@ namespace Ogre {
             {
                 grp->removeFromIndex(pArch);
                 grp->locationList.erase(li);
-
+                ArchiveManager::getSingleton().unload(pArch);
                 break;
             }
 
