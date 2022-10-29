@@ -169,13 +169,13 @@ if(OGRE_BUILD_DEPENDENCIES AND NOT EXISTS ${OGREDEPS_PATH})
           ${PROJECT_BINARY_DIR}/zlib-1.2.13.tar.gz
           EXPECTED_HASH SHA256=b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30)
       execute_process(COMMAND ${CMAKE_COMMAND}
-          -E tar xf zlib-1.2.11.tar.gz WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+          -E tar xf zlib-1.2.13.tar.gz WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
       execute_process(COMMAND ${BUILD_COMMAND_COMMON}
           -DBUILD_SHARED_LIBS=${OGREDEPS_SHARED}
-          ${PROJECT_BINARY_DIR}/zlib-1.2.11
-          WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/zlib-1.2.11)
+          ${PROJECT_BINARY_DIR}/zlib-1.2.13
+          WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/zlib-1.2.13)
       execute_process(COMMAND ${CMAKE_COMMAND}
-          --build ${PROJECT_BINARY_DIR}/zlib-1.2.11 ${BUILD_COMMAND_OPTS})
+          --build ${PROJECT_BINARY_DIR}/zlib-1.2.13 ${BUILD_COMMAND_OPTS})
 
 endif()
 
