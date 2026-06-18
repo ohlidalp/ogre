@@ -252,16 +252,15 @@ namespace {
         // If pattern contains a directory name, do a full match
         bool full_match = (pattern.find ('/') != String::npos) ||
                           (pattern.find ('\\') != String::npos);
+        // this "flattens" the zip, so "*txt" will find all txt files, even in subdirs
         bool wildCard = pattern.find('*') != String::npos;
             
-        FileInfoList::const_iterator i, iend;
-        iend = mFileList.end();
-        for (i = mFileList.begin(); i != iend; ++i)
-            if ((dirs == (i->compressedSize == size_t (-1))) &&
-                (recursive || full_match || wildCard))
-                // Check basename matches pattern (zip is case insensitive)
-                if (StringUtil::match(full_match ? i->filename : i->basename, pattern, false))
-                    ret->push_back(i->filename);
+        for (auto& f : mFileList)
+            if ((dirs == (f.compressedSize == size_t (-1))) &&
+                (recursive || full_match || wildCard || f.path.empty()))
+                // Check basename matches pattern
+                if (StringUtil::match(full_match ? f.filename : f.basename, pattern, isCaseSensitive()))
+                    ret->push_back(f.filename);
 
         return ret;
     }
@@ -274,16 +273,15 @@ namespace {
         // If pattern contains a directory name, do a full match
         bool full_match = (pattern.find ('/') != String::npos) ||
                           (pattern.find ('\\') != String::npos);
+        // this "flattens" the zip, so "*txt" will find all txt files, even in subdirs
         bool wildCard = pattern.find('*') != String::npos;
 
-        FileInfoList::const_iterator i, iend;
-        iend = mFileList.end();
-        for (i = mFileList.begin(); i != iend; ++i)
-            if ((dirs == (i->compressedSize == size_t (-1))) &&
-                (recursive || full_match || wildCard))
-                // Check name matches pattern (zip is case insensitive)
-                if (StringUtil::match(full_match ? i->filename : i->basename, pattern, false))
-                    ret->push_back(*i);
+        for (auto& f : mFileList)
+            if ((dirs == (f.compressedSize == size_t (-1))) &&
+                (recursive || full_match || wildCard || f.path.empty()))
+                // Check name matches pattern
+                if (StringUtil::match(full_match ? f.filename : f.basename, pattern, isCaseSensitive()))
+                    ret->push_back(f);
 
         return ret;
     }
