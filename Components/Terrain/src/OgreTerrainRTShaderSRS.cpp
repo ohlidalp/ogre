@@ -166,7 +166,7 @@ bool TerrainSurface::preAddToRenderState(const RenderState* renderState, Pass* s
     // multipass rendering: pick relevant layers
     const int layerBegin = mTerrainPassIndex * mTerrainLayersPerPass;
     const int layerEnd = std::min(layerBegin + mTerrainLayersPerPass, (int)mTerrain->getLayerCount());
-    const int currentPassLayerCount = (layerEnd-1) - layerBegin;
+    const int currentPassLayerCount = layerEnd - layerBegin;
     mUVMul.resize((currentPassLayerCount + 3) / 4); // integer ceil
 
     mUseNormalMapping = mUseNormalMapping && !mTerrain->getLayerTextureName(0, 1).empty();
@@ -292,7 +292,8 @@ bool TerrainSurface::createCpuSubPrograms(ProgramSet* programSet)
     // multipass rendering: pick relevant layers
     const int layerBegin = mTerrainPassIndex * mTerrainLayersPerPass;
     const int layerEnd = std::min(layerBegin + mTerrainLayersPerPass, (int)mTerrain->getLayerCount());
-    for (int l = layerBegin; l < layerEnd; ++l)
+    const int numLayersForThisPass = layerEnd - layerBegin;
+    for (int l = 0; l < numLayersForThisPass; ++l)
     {
         auto blendWeight = (l == 0 && mTerrainPassIndex == 0) ? In(1.0f) : In(blendWeights[(l - 1) / 4]).mask(channel[(l - 1) % 4]);
         auto difftex = psProgram->resolveParameter(GCT_SAMPLER2D, "difftex", texUnit++);
