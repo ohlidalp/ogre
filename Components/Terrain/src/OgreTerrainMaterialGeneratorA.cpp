@@ -222,18 +222,24 @@ namespace Ogre
 
     }
     //---------------------------------------------------------------------
+    static int getNumSupplementaryTexUnitsPerPass(const Terrain* terrain, bool pssm)
+    {
+        int layers = 1; // global normal
+        layers += bool(terrain->getGlobalColourMap());
+        layers += bool(terrain->getLightmap());
+
+        if(pssm)
+            layers += 3; // 3 shadow textures
+
+        return layers;
+    }
     static int getRequiredLayers(const Terrain* terrain, bool pssm)
     {
         int layers = terrain->getLayerCount(); // layer diffusespec
         if (!terrain->getLayerTextureName(0, 1).empty())
             layers *= 2; // per layer normalheight
-        layers += 1; // global normal
-        layers += bool(terrain->getGlobalColourMap());
-        layers += bool(terrain->getLightmap());
+        layers += getNumSupplementaryTexUnitsPerPass(terrain, pssm);
         layers += terrain->getBlendTextures().size();
-
-        if(pssm)
-            layers += 3; // 3 shadow textures
 
         return layers;
     }
