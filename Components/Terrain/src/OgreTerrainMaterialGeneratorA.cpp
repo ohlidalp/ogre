@@ -274,7 +274,8 @@ namespace Ogre
                 <<reqTUs<<" required, "<<rsc->getNumTextureUnits()<<" available.";
             if (mDoMultipassRenderIfLackingTexUnits)
             {
-                numRenderPasses = terrain->getLayerCount() / getMaxLayers(terrain);
+                const int maxLayersPerPass = getMaxLayers(terrain);
+                numRenderPasses = (terrain->getLayerCount() + maxLayersPerPass) / maxLayersPerPass; // integer ceil
                 LogManager::getSingleton().stream(LML_WARNING, false)
                     <<"TerrainMaterialGeneratorA: Falling back to multipass rendering (using "<<numRenderPasses<<" passes)";
             }
