@@ -435,13 +435,13 @@ protected:
         TerrainLayerBlendMap* blendMap4 = terrain->getLayerBlendMap(5);
         float minHeight0 = 20;
         float fadeDist0 = 15;
-        float minHeight1 = 45;
+        float minHeight1 = 50;
         float fadeDist1 = 15;
-        float minHeight2 = 63;
+        float minHeight2 = 80;
         float fadeDist2 = 15;
-        float minHeight3 = 70;
+        float minHeight3 = 110;
         float fadeDist3 = 15;
-        float minHeight4 = 90;
+        float minHeight4 = 140;
         float fadeDist4 = 15;
         float* pBlend0 = blendMap0->getBlendPointer();
         float* pBlend1 = blendMap1->getBlendPointer();
@@ -512,6 +512,8 @@ protected:
 
         // Disable steep parallax by default
         matProfile->setLayerParallaxOcclusionMappingEnabled(false);
+
+        matProfile->setDoMultipassRenderIfLackingTexUnits(true);
 
         //! [composite_lighting]
         // Important to set these so that the terrain knows what to use for baked (non-realtime) data
