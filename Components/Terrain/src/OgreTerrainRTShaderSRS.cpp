@@ -122,6 +122,13 @@ bool TerrainSurface::preAddToRenderState(const RenderState* renderState, Pass* s
 {
     mTerrain = any_cast<const Terrain*>(srcPass->getUserObjectBindings().getUserAny("Terrain"));
 
+    // multipass rendering support
+    auto passesAny = srcPass->getUserObjectBindings().getUserAny("TerrainPasses");
+    auto passes = any_cast<std::tuple<int,int,int>>(passesAny);
+    mTerrainPassIndex = std::get<0>(passes);
+    mTerrainNumPasses = std::get<1>(passes);
+    mTerrainLayersPerPass = std::get<2>(passes);
+
     SamplerPtr clampSampler = TextureManager::getSingleton().createSampler();
     clampSampler->setAddressingMode(TAM_CLAMP);
     clampSampler->setFiltering(FT_MIP, FO_NONE);
@@ -144,17 +151,26 @@ bool TerrainSurface::preAddToRenderState(const RenderState* renderState, Pass* s
         tu->setSampler(clampSampler);
     }
 
-    for(auto bt : mTerrain->getBlendTextures())
+    // multipass rendering: pick relevant blend textures
+    const int numBlendmapsPerPass = (mTerrainLayersPerPass + 3) / 4; // integer ceil
+    const int blendTexBegin = mTerrainPassIndex * numBlendmapsPerPass;
+    const int blendTexEnd = std::min(blendTexBegin + numBlendmapsPerPass, (int)mTerrain->getBlendTextures().size());
+    for(int i = blendTexBegin; i < blendTexEnd; i++)
     {
+        auto bt = mTerrain->getBlendTextures()[i];
         tu = srcPass->createTextureUnitState();
         tu->setTexture(bt);
         tu->setSampler(clampSampler);
     }
 
-    mUVMul.resize((mTerrain->getLayerCount() + 3) / 4); // integer ceil
+    // multipass rendering: pick relevant layers
+    const int layerBegin = mTerrainPassIndex * mTerrainLayersPerPass;
+    const int layerEnd = std::min(layerBegin + mTerrainLayersPerPass, (int)mTerrain->getLayerCount());
+    const int currentPassLayerCount = (layerEnd-1) - layerBegin;
+    mUVMul.resize((currentPassLayerCount + 3) / 4); // integer ceil
 
     mUseNormalMapping = mUseNormalMapping && !mTerrain->getLayerTextureName(0, 1).empty();
-    for (int i = 0; i < mTerrain->getLayerCount(); ++i)
+    for (int i = layerBegin; i < layerEnd; ++i)
     {
         srcPass->createTextureUnitState(mTerrain->getLayerTextureName(i, 0));
         if (mUseNormalMapping)
@@ -267,9 +283,13 @@ bool TerrainSurface::createCpuSubPrograms(ProgramSet* programSet)
 
     stage.assign(Vector4::ZERO, diffuseSpec);
     stage.assign(Vector3(0, 0, 1), TSnormal);
-    for (int l = 0; l < mTerrain->getLayerCount(); ++l)
+
+    // multipass rendering: pick relevant layers
+    const int layerBegin = mTerrainPassIndex * mTerrainLayersPerPass;
+    const int layerEnd = std::min(layerBegin + mTerrainLayersPerPass, (int)mTerrain->getLayerCount());
+    for (int l = layerBegin; l < layerEnd; ++l)
     {
-        auto blendWeight = l == 0 ? In(1.0f) : In(blendWeights[(l - 1) / 4]).mask(channel[(l - 1) % 4]);
+        auto blendWeight = (l == 0 && mTerrainPassIndex == 0) ? In(1.0f) : In(blendWeights[(l - 1) / 4]).mask(channel[(l - 1) % 4]);
         auto difftex = psProgram->resolveParameter(GCT_SAMPLER2D, "difftex", texUnit++);
         std::vector<Operand> args = {blendWeight, In(uvPS), In(mUVMul[l/4]).mask(channel[l % 4])};
         if (mUseNormalMapping)

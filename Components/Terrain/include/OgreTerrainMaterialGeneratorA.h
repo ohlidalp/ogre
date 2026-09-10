@@ -114,6 +114,16 @@ namespace Ogre
             */
             PSSMShadowCameraSetup* getReceiveDynamicShadowsPSSM() const { return mPSSM; }
 
+            /** Should a multi-pass material be generated if there's not enough texture units for a single-pass material?
+             */
+            bool getDoMultipassRenderIfLackingTexUnits() const { return mDoMultipassRenderIfLackingTexUnits; }
+
+            /** Should a multi-pass material be generated if there's not enough texture units for a single-pass material?
+             This opt-in fallback will preserve full visual quality at the cost of sub-optimal rendering performance
+             (all effects, i.e. PSSM shadows, will be evaluated repeatedly - once per pass).
+             */
+             void setDoMultipassRenderIfLackingTexUnits(bool enable) { mDoMultipassRenderIfLackingTexUnits = enable; }
+
             void setLightmapEnabled(bool enabled) { mParent->setLightmapEnabled(enabled); }
             void setCompositeMapEnabled(bool enabled) { mParent->setCompositeMapEnabled(enabled); }
             void setReceiveDynamicShadowsEnabled(bool enabled) { mParent->setReceiveDynamicShadowsEnabled(enabled); }
@@ -126,11 +136,15 @@ namespace Ogre
                 RENDER_COMPOSITE_MAP
             };
             bool isShadowingEnabled(TechniqueType tt, const Terrain* terrain) const;
+            int calcNumSupplementaryTexUnitsPerPass(const Terrain* terrain) const; // norm/light/color/shadow, ignores blend
+            int calcNumSpecificTexUnitsPerLayer(const Terrain* terrain) const; // diffusespecular + normalheight, ignores blend
+            int calcTotalRequiredTexUnits(const Terrain* terrain) const; // everything, including blend
             TerrainMaterialGeneratorA* mParent;
             bool mLayerNormalMappingEnabled;
             bool mLayerParallaxMappingEnabled;
             bool mLayerParallaxOcclusionMappingEnabled;
             bool mLayerSpecularMappingEnabled;
+            bool mDoMultipassRenderIfLackingTexUnits;
             PSSMShadowCameraSetup* mPSSM;
         };
 

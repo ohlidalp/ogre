@@ -99,6 +99,7 @@ namespace Ogre
         , mLayerParallaxOcclusionMappingEnabled(true)
         , mLayerSpecularMappingEnabled(true)
         , mPSSM(0)
+        , mDoMultipassRenderIfLackingTexUnits(false)
     {
     }
     //---------------------------------------------------------------------
@@ -198,14 +199,23 @@ namespace Ogre
     uint8 TerrainMaterialGeneratorA::SM2Profile::getMaxLayers(const Terrain* terrain) const
     {
         // count the texture units free
-        uint8 freeTextureUnits = 16;
-        // lightmap
-        --freeTextureUnits;
-        // normalmap
-        --freeTextureUnits;
-        // colourmap
-        if (terrain->getGlobalColourMapEnabled())
-            --freeTextureUnits;
+        uint8 freeTextureUnits
+            = Root::getSingletonPtr()->getRenderSystem()->getCapabilities()->getNumTextureUnits()
+            - calcNumSupplementaryTexUnitsPerPass(terrain);
+
+        // each layer needs 2.25 units (1xdiffusespec, 1xnormalheight, 0.25xblend)
+        if (!terrain->getLayerTextureName(0, 1).empty())
+            return static_cast<uint8>(freeTextureUnits / 2.25f);
+        else
+            return static_cast<uint8>(freeTextureUnits / 1.25f);
+    }
+    //---------------------------------------------------------------------
+    int TerrainMaterialGeneratorA::SM2Profile::calcNumSupplementaryTexUnitsPerPass(const Terrain* terrain) const
+    {
+        int layers = 1; // global normal
+        layers += bool(terrain->getGlobalColourMap());
+        layers += bool(terrain->getLightmap());
+
         if (isShadowingEnabled(HIGH_LOD, terrain))
         {
             uint8 numShadowTextures = 1;
@@ -213,36 +223,29 @@ namespace Ogre
             {
                 numShadowTextures = (uint8)getReceiveDynamicShadowsPSSM()->getSplitCount();
             }
-            freeTextureUnits -= numShadowTextures;
+            layers += numShadowTextures;
         }
-
-        // each layer needs 2.25 units (1xdiffusespec, 1xnormalheight, 0.25xblend)
-        return static_cast<uint8>(freeTextureUnits / 2.25f);
-        
-
-    }
-    //---------------------------------------------------------------------
-    static int getNumSupplementaryTexUnitsPerPass(const Terrain* terrain, bool pssm)
-    {
-        int layers = 1; // global normal
-        layers += bool(terrain->getGlobalColourMap());
-        layers += bool(terrain->getLightmap());
-
-        if(pssm)
-            layers += 3; // 3 shadow textures
 
         return layers;
     }
-    static int getRequiredLayers(const Terrain* terrain, bool pssm)
+    //---------------------------------------------------------------------
+    int TerrainMaterialGeneratorA::SM2Profile::calcNumSpecificTexUnitsPerLayer(const Terrain* terrain) const
     {
-        int layers = terrain->getLayerCount(); // layer diffusespec
+        int layers = 1; // layer diffusespec
         if (!terrain->getLayerTextureName(0, 1).empty())
-            layers *= 2; // per layer normalheight
-        layers += getNumSupplementaryTexUnitsPerPass(terrain, pssm);
+            layers += 1; // per layer normalheight
+        return layers;
+    }
+    //---------------------------------------------------------------------
+    int TerrainMaterialGeneratorA::SM2Profile::calcTotalRequiredTexUnits(const Terrain* terrain) const
+    {
+        int layers = terrain->getLayerCount() * calcNumSpecificTexUnitsPerLayer(terrain);
+        layers += calcNumSupplementaryTexUnitsPerPass(terrain);
         layers += terrain->getBlendTextures().size();
 
         return layers;
     }
+    //---------------------------------------------------------------------
     MaterialPtr TerrainMaterialGeneratorA::SM2Profile::generate(const Terrain* terrain)
     {
         // re-use old material if exists
@@ -259,64 +262,83 @@ namespace Ogre
         }
         // clear everything
         mat->removeAllTechniques();
-        
-        // Automatically disable normal & parallax mapping if card cannot handle it
-        // We do this rather than having a specific technique for it since it's simpler
+
+        // Check we have enough texture units and adjust the settings if not.
         auto rsc = Root::getSingletonPtr()->getRenderSystem()->getCapabilities();
-        if (getRequiredLayers(terrain, mPSSM) > rsc->getNumTextureUnits())
+        const int reqTUs = calcTotalRequiredTexUnits(terrain);
+        int numRenderPasses = 1;
+        if (reqTUs > rsc->getNumTextureUnits())
         {
-            setLayerNormalMappingEnabled(false);
-            setLayerParallaxMappingEnabled(false);
-            LogManager::getSingleton().logWarning(
-                "TerrainMaterialGeneratorA: Normal mapping disabled due to lack of texture units");
-        }
-
-        Pass* pass;
-        pass = mat->createTechnique()->createPass();
-        pass->getUserObjectBindings().setUserAny("Terrain", terrain);
-        pass->setSpecular(ColourValue::White);
-        pass->setShininess(32); // user param
-
-        if(mLayerSpecularMappingEnabled)
-        {
-            // we use this to inject our specular map
-            pass->setVertexColourTracking(TVC_SPECULAR);
+            LogManager::getSingleton().stream(LML_WARNING, false)
+                <<"TerrainMaterialGeneratorA: Not enough texture units: "
+                <<reqTUs<<" required, "<<rsc->getNumTextureUnits()<<" available.";
+            if (mDoMultipassRenderIfLackingTexUnits)
+            {
+                numRenderPasses = terrain->getLayerCount() / getMaxLayers(terrain);
+                LogManager::getSingleton().stream(LML_WARNING, false)
+                    <<"TerrainMaterialGeneratorA: Falling back to multipass rendering (using "<<numRenderPasses<<" passes)";
+            }
+            else
+            {
+                // Automatically disable normal & parallax mapping if card cannot handle it
+                // We do this rather than having a specific technique for it since it's simpler
+                setLayerNormalMappingEnabled(false);
+                setLayerParallaxMappingEnabled(false);
+                LogManager::getSingleton().logWarning(
+                    "TerrainMaterialGeneratorA: Normal mapping disabled due to lack of texture units");
+            }
         }
 
         using namespace RTShader;
-        auto mainRenderState = std::make_shared<TargetRenderState>();
-        auto tplRS = static_cast<TerrainMaterialGeneratorA*>(mParent)->getMainRenderState();
-        mainRenderState->setLightCount(tplRS->getLightCount());
-        mainRenderState->setHaveAreaLights(tplRS->haveAreaLights());
-
-        if(auto surface = tplRS->getSubRenderState("TerrainSurface"))
-            surface->setParameter("use_normal_mapping", std::to_string(mLayerNormalMappingEnabled));
-
-        try
+        Technique* tech = mat->createTechnique();
+        for (int renderPassIndex = 0; renderPassIndex < numRenderPasses; renderPassIndex++)
         {
-            mainRenderState->link(*tplRS, pass, pass);
-            auto surface = mainRenderState->getSubRenderState("TerrainSurface");
-            OgreAssert(surface, "TerrainSurface SubRenderState not found");
-            surface->setParameter("use_parallax_mapping", std::to_string(mLayerParallaxMappingEnabled));
-            surface->setParameter("use_parallax_occlusion_mapping", std::to_string(mLayerParallaxOcclusionMappingEnabled));
-            surface->setParameter("use_specular_mapping", std::to_string(mLayerSpecularMappingEnabled));
-            if(isShadowingEnabled(HIGH_LOD, terrain))
+            Pass* pass = tech->createPass();
+            pass->getUserObjectBindings().setUserAny("Terrain", terrain);
+            pass->getUserObjectBindings().setUserAny("TerrainPasses", std::make_tuple(renderPassIndex, numRenderPasses, (int)getMaxLayers(terrain)));
+            pass->setSpecular(ColourValue::White);
+            pass->setShininess(32); // user param
+
+            if(mLayerSpecularMappingEnabled)
             {
-                auto pssm = ShaderGenerator::getSingleton().createSubRenderState(SRS_SHADOW_MAPPING);
-                if(mPSSM)
-                    pssm->setParameter("split_points", mPSSM->getSplitPoints());
-                pssm->preAddToRenderState(mainRenderState.get(), pass, pass);
-                mainRenderState->addSubRenderStateInstance(pssm);
+                // we use this to inject our specular map
+                pass->setVertexColourTracking(TVC_SPECULAR);
             }
-            mainRenderState->acquirePrograms(pass);
-        }
-        catch(const std::exception& e)
-        {
-            LogManager::getSingleton().logError(e.what());
-            return nullptr;
-        }
 
-        pass->getUserObjectBindings().setUserAny(TargetRenderState::UserKey, mainRenderState);
+            auto mainRenderState = std::make_shared<TargetRenderState>();
+            auto tplRS = static_cast<TerrainMaterialGeneratorA*>(mParent)->getMainRenderState();
+            mainRenderState->setLightCount(tplRS->getLightCount());
+            mainRenderState->setHaveAreaLights(tplRS->haveAreaLights());
+
+            if(auto surface = tplRS->getSubRenderState("TerrainSurface"))
+                surface->setParameter("use_normal_mapping", std::to_string(mLayerNormalMappingEnabled));
+
+            try
+            {
+                mainRenderState->link(*tplRS, pass, pass);
+                auto surface = mainRenderState->getSubRenderState("TerrainSurface");
+                OgreAssert(surface, "TerrainSurface SubRenderState not found");
+                surface->setParameter("use_parallax_mapping", std::to_string(mLayerParallaxMappingEnabled));
+                surface->setParameter("use_parallax_occlusion_mapping", std::to_string(mLayerParallaxOcclusionMappingEnabled));
+                surface->setParameter("use_specular_mapping", std::to_string(mLayerSpecularMappingEnabled));
+                if(isShadowingEnabled(HIGH_LOD, terrain))
+                {
+                    auto pssm = ShaderGenerator::getSingleton().createSubRenderState(SRS_SHADOW_MAPPING);
+                    if(mPSSM)
+                        pssm->setParameter("split_points", mPSSM->getSplitPoints());
+                    pssm->preAddToRenderState(mainRenderState.get(), pass, pass);
+                    mainRenderState->addSubRenderStateInstance(pssm);
+                }
+                mainRenderState->acquirePrograms(pass);
+            }
+            catch(const std::exception& e)
+            {
+                LogManager::getSingleton().logError(e.what());
+                return nullptr;
+            }
+
+            pass->getUserObjectBindings().setUserAny(TargetRenderState::UserKey, mainRenderState);
+        }
 
         // LOD
         if(mParent->isCompositeMapEnabled())
@@ -324,7 +346,7 @@ namespace Ogre
             Technique* tech = mat->createTechnique();
             tech->setLodIndex(1);
 
-            pass = tech->createPass();
+            Pass* pass = tech->createPass();
             TextureUnitState* tu = pass->createTextureUnitState();
             tu->setTexture(terrain->getCompositeMap());
             tu->setTextureAddressingMode(TAM_CLAMP);
@@ -386,6 +408,8 @@ namespace Ogre
         using namespace RTShader;
         auto pass = mat->createTechnique()->createPass();
         pass->getUserObjectBindings().setUserAny("Terrain", terrain);
+        // multipass rendering support
+        pass->getUserObjectBindings().setUserAny("TerrainPasses", std::make_tuple(/*renderPassIndex*/0, /*numRenderPasses*/1, (int)getMaxLayers(terrain)));
 
         auto compRenderState = std::make_shared<TargetRenderState>();
         compRenderState->setLightCount(1);

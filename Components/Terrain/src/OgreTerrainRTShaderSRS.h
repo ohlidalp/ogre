@@ -50,6 +50,9 @@ public:
     static String Type;
 protected:
     const Terrain* mTerrain;
+    int mTerrainNumPasses;
+    int mTerrainPassIndex;
+    int mTerrainLayersPerPass;
     std::vector<RTShader::UniformParameterPtr> mUVMul;
     bool mUseNormalMapping = true;
     bool mUseSpecularMapping = false;
