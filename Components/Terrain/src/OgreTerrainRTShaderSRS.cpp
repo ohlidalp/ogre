@@ -269,8 +269,13 @@ bool TerrainSurface::createCpuSubPrograms(ProgramSet* programSet)
     stage.assign(Vector4::ZERO, psSpecular);
 
     std::vector<ParameterPtr> blendWeights;
-    for(auto bt : mTerrain->getBlendTextures())
+    // multipass rendering: pick relevant blend textures
+    const int numBlendmapsPerPass = (mTerrainLayersPerPass + 3) / 4; // integer ceil
+    const int blendTexBegin = mTerrainPassIndex * numBlendmapsPerPass;
+    const int blendTexEnd = std::min(blendTexBegin + numBlendmapsPerPass, (int)mTerrain->getBlendTextures().size());
+    for(int i = blendTexBegin; i < blendTexEnd; i++)
     {
+        auto bt = mTerrain->getBlendTextures()[i];
         auto weight = psMain->resolveLocalParameter(GCT_FLOAT4, StringUtil::format("blendWeight%d", texUnit));
         auto blendTex = psProgram->resolveParameter(GCT_SAMPLER2D, "blendTex", texUnit++);
         stage.sampleTexture(blendTex, uvPS, weight);
