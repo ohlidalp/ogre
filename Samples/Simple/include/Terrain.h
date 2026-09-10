@@ -430,12 +430,24 @@ protected:
         using namespace Ogre;
         TerrainLayerBlendMap* blendMap0 = terrain->getLayerBlendMap(1);
         TerrainLayerBlendMap* blendMap1 = terrain->getLayerBlendMap(2);
+        TerrainLayerBlendMap* blendMap2 = terrain->getLayerBlendMap(3);
+        TerrainLayerBlendMap* blendMap3 = terrain->getLayerBlendMap(4);
+        TerrainLayerBlendMap* blendMap4 = terrain->getLayerBlendMap(5);
         float minHeight0 = 20;
         float fadeDist0 = 15;
-        float minHeight1 = 70;
+        float minHeight1 = 45;
         float fadeDist1 = 15;
+        float minHeight2 = 63;
+        float fadeDist2 = 15;
+        float minHeight3 = 70;
+        float fadeDist3 = 15;
+        float minHeight4 = 90;
+        float fadeDist4 = 15;
         float* pBlend0 = blendMap0->getBlendPointer();
         float* pBlend1 = blendMap1->getBlendPointer();
+        float* pBlend2 = blendMap2->getBlendPointer();
+        float* pBlend3 = blendMap3->getBlendPointer();
+        float* pBlend4 = blendMap4->getBlendPointer();
         for (uint16 y = 0; y < terrain->getLayerBlendMapSize(); ++y)
         {
             for (uint16 x = 0; x < terrain->getLayerBlendMapSize(); ++x)
@@ -447,12 +459,23 @@ protected:
 
                 *pBlend0++ = Math::saturate((height - minHeight0) / fadeDist0);
                 *pBlend1++ = Math::saturate((height - minHeight1) / fadeDist1);
+                *pBlend2++ = Math::saturate((height - minHeight2) / fadeDist2);
+                *pBlend3++ = Math::saturate((height - minHeight3) / fadeDist3);
+                *pBlend4++ = Math::saturate((height - minHeight4) / fadeDist4);
             }
         }
         blendMap0->dirty();
         blendMap1->dirty();
+        blendMap2->dirty();
+        blendMap3->dirty();
+        blendMap4->dirty();
+
         blendMap0->update();
         blendMap1->update();
+        blendMap2->update();
+        blendMap3->update();
+        blendMap4->update();
+
         //! [blendmap]
         // set up a colour map
         /*
@@ -513,16 +536,32 @@ protected:
         //! [tex_from_src]
 
         //! [textures]
-        defaultimp.layerList.resize(3);
+        defaultimp.layerList.resize(6);
+
         defaultimp.layerList[0].worldSize = 200;
         defaultimp.layerList[0].textureNames.push_back("Ground37_diffspec.dds");
         defaultimp.layerList[0].textureNames.push_back("Ground37_normheight.dds");
+
         defaultimp.layerList[1].worldSize = 200;
         defaultimp.layerList[1].textureNames.push_back("Ground23_diffspec"); // loaded from memory
         defaultimp.layerList[1].textureNames.push_back("Ground23_normheight.dds");
+
         defaultimp.layerList[2].worldSize = 400;
         defaultimp.layerList[2].textureNames.push_back("Rock20_diffspec.dds");
         defaultimp.layerList[2].textureNames.push_back("Rock20_normheight.dds");
+
+        defaultimp.layerList[3].worldSize = 400;
+        defaultimp.layerList[3].textureNames.push_back("31-asphalt_diffusespecular.dds");
+        defaultimp.layerList[3].textureNames.push_back("31-asphalt_normalheight.dds");
+
+        defaultimp.layerList[4].worldSize = 400;
+        defaultimp.layerList[4].textureNames.push_back("31-gravel_diffusespecular.dds");
+        defaultimp.layerList[4].textureNames.push_back("31-gravel_normalheight.dds");
+
+        defaultimp.layerList[5].worldSize = 400;
+        defaultimp.layerList[5].textureNames.push_back("31-sand_diffusespecular.dds");
+        defaultimp.layerList[5].textureNames.push_back("31-sand_normalheight.dds");
+
         //! [textures]
     }
 
