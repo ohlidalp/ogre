@@ -336,7 +336,7 @@ namespace Ogre
         deflateEnd(mZStream);
 
         inFile.close();
-        remove(mTempFileName.c_str());
+        _removeFile(mTempFileName);
                         
     }
     //---------------------------------------------------------------------

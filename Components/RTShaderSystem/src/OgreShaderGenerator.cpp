@@ -1340,7 +1340,7 @@ void ShaderGenerator::setShaderCachePath( const String& cachePath )
 
             // Close and remove the test file.
             outFile.close();
-            remove(outTestFileName.c_str());
+            _removeFile(outTestFileName);
         }
     }
 }

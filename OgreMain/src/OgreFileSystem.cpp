@@ -363,6 +363,14 @@ namespace {
     {
         openStdFstreamImpl(stream, path, mode);
     }
+    bool _removeFile(const String& path)
+    {
+#ifdef _OGRE_FILESYSTEM_ARCHIVE_UNICODE
+        return ::_wremove(to_wpath(path).c_str()) == 0;
+#else
+        return ::remove(path.c_str()) == 0;
+#endif
+    }
     //---------------------------------------------------------------------
     DataStreamPtr _openFileStream(const String& full_path, std::ios::openmode mode, const String& name)
     {
@@ -455,12 +463,7 @@ namespace {
         {
             OGRE_EXCEPT(Exception::ERR_INVALIDPARAMS, "Cannot remove a file from a read-only archive");
         }
-        String full_path = concatenate_path(mName, filename);
-#ifdef _OGRE_FILESYSTEM_ARCHIVE_UNICODE
-		::_wremove(to_wpath(full_path).c_str());
-#else
-        ::remove(full_path.c_str());
-#endif
+        _removeFile(concatenate_path(mName, filename));
     }
     //-----------------------------------------------------------------------
     StringVectorPtr FileSystemArchive::list(bool recursive, bool dirs) const

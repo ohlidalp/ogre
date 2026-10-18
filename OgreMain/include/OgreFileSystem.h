@@ -62,6 +62,14 @@ namespace Ogre {
     _OgreExport void _openStdFstream(std::fstream& stream, const String& path,
                                      std::ios::openmode mode = std::ios::in | std::ios::out);
 
+    /** internal method to delete a file
+     *
+     * Behaves like calling `remove(path)`, but supports UTF-8 paths on Windows
+     * if OGRE_CONFIG_FILESYSTEM_UNICODE is enabled.
+     * @return true on success
+     */
+    _OgreExport bool _removeFile(const String& path);
+
     /** Specialisation of the ArchiveFactory to allow reading of files from
         filesystem folders / directories.
     */
