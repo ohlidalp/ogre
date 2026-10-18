@@ -25,6 +25,7 @@ THE SOFTWARE.
 -----------------------------------------------------------------------------
 */
 #include "OgreShaderPrecompiledHeaders.h"
+#include "OgreFileSystem.h"
 
 namespace Ogre {
 
@@ -1327,7 +1328,8 @@ void ShaderGenerator::setShaderCachePath( const String& cachePath )
         {   
             // Make sure this is a valid writable path.
             String outTestFileName(mShaderCachePath + "ShaderGenerator.tst");
-            std::ofstream outFile(outTestFileName.c_str());
+            std::ofstream outFile;
+            _openStdFstream(outFile, outTestFileName);
             
             if (!outFile)
             {

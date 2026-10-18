@@ -48,6 +48,20 @@ namespace Ogre {
     /// internal method to open a FileStreamDataStream
     DataStreamPtr _openFileStream(const String& path, std::ios::openmode mode, const String& name = "");
 
+    /** internal method to open a std::fstream
+     *
+     * Behaves like calling `stream.open(path, mode)`, but supports UTF-8 paths on Windows
+     * if OGRE_CONFIG_FILESYSTEM_UNICODE is enabled. Check `stream.is_open()` for success.
+     */
+    _OgreExport void _openStdFstream(std::ifstream& stream, const String& path,
+                                     std::ios::openmode mode = std::ios::in);
+    /// @overload
+    _OgreExport void _openStdFstream(std::ofstream& stream, const String& path,
+                                     std::ios::openmode mode = std::ios::out);
+    /// @overload
+    _OgreExport void _openStdFstream(std::fstream& stream, const String& path,
+                                     std::ios::openmode mode = std::ios::in | std::ios::out);
+
     /** Specialisation of the ArchiveFactory to allow reading of files from
         filesystem folders / directories.
     */

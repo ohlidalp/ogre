@@ -51,7 +51,7 @@ namespace Ogre
     {
         if (!mSuppressFile)
         {
-            mLog.open(name.c_str());
+            _openStdFstream(mLog, name);
 
 #if (OGRE_PLATFORM == OGRE_PLATFORM_WIN32 || OGRE_PLATFORM == OGRE_PLATFORM_WINRT) && _WIN32_WINNT >= _WIN32_WINNT_VISTA
             // Register log file to be collected by Windows Error Reporting

@@ -641,7 +641,8 @@ namespace Ogre {
     //--------------------------------------------------------------------------
     void StaticGeometry::dump(const String& filename) const
     {
-        std::ofstream of(filename.c_str());
+        std::ofstream of;
+        _openStdFstream(of, filename);
         of << "Static Geometry Report for " << mName << std::endl;
         of << "-------------------------------------------------" << std::endl;
         of << "Number of queued submeshes: " << mQueuedSubMeshes.size() << std::endl;

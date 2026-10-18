@@ -25,6 +25,7 @@ THE SOFTWARE.
 -----------------------------------------------------------------------------
 */
 #include "OgreShaderPrecompiledHeaders.h"
+#include "OgreFileSystem.h"
 
 #ifdef RTSHADER_SYSTEM_BUILD_EXT_SHADERS
 
@@ -374,7 +375,7 @@ void TextureAtlasSamplerFactory::writeInstance(MaterialSerializer* ser, SubRende
 bool TextureAtlasSamplerFactory::addTexutreAtlasDefinition( const Ogre::String& filename, TextureAtlasTablePtr textureAtlasTable )
 {
     std::ifstream inp;
-    inp.open(filename.c_str(), std::ios::in | std::ios::binary);
+    _openStdFstream(inp, filename, std::ios::in | std::ios::binary);
     if(!inp)
     {
         OGRE_EXCEPT(Exception::ERR_FILE_NOT_FOUND, "'" + filename + "' file not found!", 

@@ -29,6 +29,7 @@ THE SOFTWARE.
 #include "OgreSTBICodec.h"
 #include "OgreLogManager.h"
 #include "OgreDataStream.h"
+#include "OgreFileSystem.h"
 
 #include "OgrePlatformInformation.h"
 
@@ -160,7 +161,8 @@ namespace Ogre {
     {
 #if OGRE_PLATFORM != OGRE_PLATFORM_EMSCRIPTEN
         MemoryDataStreamPtr data = static_pointer_cast<MemoryDataStream>(encode(input, pData));
-        std::ofstream f(outFileName.c_str(), std::ios::out | std::ios::binary);
+        std::ofstream f;
+        _openStdFstream(f, outFileName, std::ios::out | std::ios::binary);
 
         if(!f.is_open()) {
             OGRE_EXCEPT(Exception::ERR_INTERNAL_ERROR,

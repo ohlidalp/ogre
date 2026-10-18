@@ -27,6 +27,7 @@ THE SOFTWARE.
 */
 
 #include "OgreMeshLodPrecompiledHeaders.h"
+#include "OgreFileSystem.h"
 
 namespace Ogre
 {
@@ -40,7 +41,7 @@ namespace Ogre
     void LodConfigSerializer::importLodConfig(Ogre::LodConfig* config, const Ogre::String& filename)
     {
         std::fstream *f = OGRE_NEW_T(std::fstream, MEMCATEGORY_GENERAL)();
-        f->open(filename.c_str(), std::ios::binary | std::ios::in);
+        _openStdFstream(*f, filename, std::ios::binary | std::ios::in);
         if(f->is_open()){
             Ogre::DataStreamPtr stream(OGRE_NEW Ogre::FileStreamDataStream(f));
 
@@ -162,7 +163,7 @@ namespace Ogre
     void LodConfigSerializer::exportLodConfig(Ogre::LodConfig& config, const Ogre::String& filename, Endian endianMode /*= ENDIAN_NATIVE*/ )
     {
         std::fstream *f = OGRE_NEW_T(std::fstream, MEMCATEGORY_GENERAL)();
-        f->open(filename.c_str(), std::ios::binary | std::ios::out);
+        _openStdFstream(*f, filename, std::ios::binary | std::ios::out);
         Ogre::DataStreamPtr stream(OGRE_NEW Ogre::FileStreamDataStream(f));
 
         exportLodConfig(config, stream, endianMode);

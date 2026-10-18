@@ -16,12 +16,12 @@
 #include "OgreDataStream.h"
 #include "OgreBitesConfigDialog.h"
 #include "OgreWindowEventUtilities.h"
+#include "OgreFileSystem.h"
 
 #include "OgreConfigPaths.h"
 
 #if OGRE_PLATFORM == OGRE_PLATFORM_ANDROID
 #include "OgreArchiveManager.h"
-#include "OgreFileSystem.h"
 #include "OgreZip.h"
 #endif
 
@@ -281,7 +281,8 @@ void ApplicationContext::enableShaderCache() const
 
     // Load for a package version of the shaders.
     Ogre::String path = mFSLayer->getWritablePath(SHADER_CACHE_FILENAME);
-    std::ifstream inFile(path.c_str(), std::ios::binary);
+    std::ifstream inFile;
+    Ogre::_openStdFstream(inFile, path, std::ios::binary);
     if (!inFile.is_open())
     {
         Ogre::LogManager::getSingleton().logWarning("Could not open '"+path+"'");
@@ -712,7 +713,8 @@ void ApplicationContext::shutdown()
     if (gpuMgr.getSaveMicrocodesToCache() && gpuMgr.isCacheDirty())
     {
         Ogre::String path = mFSLayer->getWritablePath(SHADER_CACHE_FILENAME);
-        std::fstream outFile(path.c_str(), std::ios::out | std::ios::binary);
+        std::fstream outFile;
+        Ogre::_openStdFstream(outFile, path, std::ios::out | std::ios::binary);
 
         if (outFile.is_open())
         {

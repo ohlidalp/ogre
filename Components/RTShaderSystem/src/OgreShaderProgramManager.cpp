@@ -25,6 +25,7 @@ THE SOFTWARE.
 -----------------------------------------------------------------------------
 */
 #include "OgreShaderPrecompiledHeaders.h"
+#include "OgreFileSystem.h"
 
 namespace Ogre {
 
@@ -394,12 +395,13 @@ GpuProgramPtr ProgramManager::createGpuProgram(Program* shaderProgram,
         std::ifstream programFile;
 
         // Check if program file already exist.
-        programFile.open(programFileName.c_str());
+        _openStdFstream(programFile, programFileName);
 
         // Case we have to write the program to a file.
         if (!programFile)
         {
-            std::ofstream outFile(programFileName.c_str());
+            std::ofstream outFile;
+            _openStdFstream(outFile, programFileName);
 
             if (!outFile)
                 return GpuProgramPtr();

@@ -303,7 +303,7 @@ namespace Ogre
         }
         
         std::ifstream inFile;
-        inFile.open(mTempFileName.c_str(), std::ios::in | std::ios::binary);
+        _openStdFstream(inFile, mTempFileName, std::ios::in | std::ios::binary);
         
         do 
         {

@@ -413,7 +413,7 @@ namespace Ogre {
             {
                 // Write the file
                 std::ofstream of;
-                of.open(outFileName.c_str(), std::ios_base::binary|std::ios_base::out);
+                _openStdFstream(of, outFileName, std::ios_base::binary|std::ios_base::out);
                 of.write((const char *)&ddsMagic, sizeof(uint32));
                 of.write((const char *)&ddsHeader, DDS_HEADER_SIZE);
                 // XXX flipEndian on each pixel chunk written unless isFloat32r ?
